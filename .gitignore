@@ -121,4 +121,5 @@ ENV/
 .mypy_cache/
 
 #data
-data/
+data/*
+!data/.gitkeep
