@@ -1,5 +1,5 @@
 """
-Baseline classifier for the LING 539 Spring 2026 Kaggle competition.
+TF-IDF & Linear Regression Classifier
 
 Task:
     Classify each text as:
@@ -7,23 +7,7 @@ Task:
         1 = Positive movie/TV review
         2 = Negative movie/TV review
 
-This script reproduces the notebook workflow:
-    1. Load train/test data
-    2. Run basic data checks
-    3. Train a TF-IDF + Logistic Regression baseline
-    4. Evaluate with macro F1
-    5. Run a trigram comparison model
-    6. Train the selected final model on the full training set
-    7. Generate outputs/submission.csv for Kaggle
-
-Expected project structure:
-    project_root/
-    ├── data/
-    │   ├── train.csv
-    │   └── test.csv
-    ├── outputs/
-    └── scripts/
-        └── baseline_classifier.py
+This script reproduces the notebook workflow
 
 Run from the project root:
     python scripts/baseline_classifier.py
@@ -60,7 +44,7 @@ RANDOM_STATE = 42
 # ---------------------------------------------------------------------
 
 def load_data(train_file: Path = TRAIN_FILE, test_file: Path = TEST_FILE) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load the Kaggle train and test CSV files."""
+    """Load the train and test CSV files."""
     if not train_file.exists():
         raise FileNotFoundError(f"Missing train file: {train_file}")
 
@@ -86,7 +70,7 @@ def clean_text_columns(train: pd.DataFrame, test: pd.DataFrame) -> tuple[pd.Data
 
 def print_data_overview(train: pd.DataFrame, test: pd.DataFrame) -> None:
     """Print dataset structure, missing values, and class distribution."""
-    print("\n================ DATA OVERVIEW ================\n")
+    print("\nDATA OVERVIEW\n")
 
     print("Train columns:")
     print(train.columns.tolist())
@@ -109,10 +93,10 @@ def print_data_overview(train: pd.DataFrame, test: pd.DataFrame) -> None:
 
 def print_sample_texts(train: pd.DataFrame, n_examples: int = 3, max_chars: int = 500) -> None:
     """Print sample texts from each class."""
-    print("\n================ SAMPLE TEXTS ================\n")
+    print("\n SAMPLE TEXTS \n")
 
     for label in [0, 1, 2]:
-        print(f"\n===== CLASS {label} EXAMPLES =====\n")
+        print(f"\n CLASS {label} EXAMPLES \n")
         samples = train[train["LABEL"] == label]["TEXT"].head(n_examples)
 
         for i, text in enumerate(samples, 1):
@@ -120,7 +104,7 @@ def print_sample_texts(train: pd.DataFrame, n_examples: int = 3, max_chars: int 
 
 
 def build_baseline_model() -> Pipeline:
-    """Build the baseline TF-IDF + Logistic Regression model."""
+    """Build the baseline TF-IDF & Logistic Regression model."""
     return Pipeline([
         ("tfidf", TfidfVectorizer(
             lowercase=True,
@@ -156,7 +140,7 @@ def build_trigram_model() -> Pipeline:
 
 def evaluate_model(model: Pipeline, X_val: pd.Series, y_val: pd.Series, model_name: str) -> tuple[float, pd.Series]:
     """Evaluate a trained model with macro F1 and a classification report."""
-    print(f"\n================ {model_name.upper()} EVALUATION ================\n")
+    print(f"\n {model_name.upper()} EVALUATION \n")
 
     preds = model.predict(X_val)
     macro_f1 = f1_score(y_val, preds, average="macro")
@@ -179,7 +163,7 @@ def print_error_examples(
     max_chars: int = 500
 ) -> pd.DataFrame:
     """Print and return a dataframe of misclassified validation examples."""
-    print("\n================ ERROR ANALYSIS ================\n")
+    print("\n ERROR ANALYSIS \n")
 
     errors = X_val[preds != y_val]
     true_labels = y_val[preds != y_val]
@@ -200,15 +184,13 @@ def print_error_examples(
 
 def create_submission(model: Pipeline, train: pd.DataFrame, test: pd.DataFrame) -> pd.DataFrame:
     """Train the selected final model on full data and create a Kaggle submission file."""
-    print("\n================ TRAIN FINAL MODEL ================\n")
+    print("\n TRAIN FINAL MODEL \n")
 
     X_full = train["TEXT"]
     y_full = train["LABEL"]
     X_test = test["TEXT"]
 
     model.fit(X_full, y_full)
-
-    print("Generating predictions for test.csv...")
 
     test_predictions = model.predict(X_test)
 
@@ -250,7 +232,7 @@ def main() -> None:
         random_state=RANDOM_STATE
     )
 
-    print("\n================ TRAIN/VALIDATION SPLIT ================\n")
+    print("\nTRAIN/VALIDATION SPLIT \n")
     print("Train size:", X_train.shape)
     print("Validation size:", X_val.shape)
 
@@ -276,14 +258,13 @@ def main() -> None:
         model_name="Trigram Model"
     )
 
-    print("\n================ MODEL COMPARISON ================\n")
+    print("\n MODEL COMPARISON \n")
     print(f"Baseline Macro F1: {baseline_f1:.6f}")
     print(f"Trigram Macro F1:  {trigram_f1:.6f}")
     print(f"Difference:        {trigram_f1 - baseline_f1:.6f}")
 
     # Final model selection:
-    # The notebook selected the baseline because it performed slightly better
-    # than the trigram model and is simpler.
+
     final_model = baseline_model
 
     create_submission(final_model, train, test)
